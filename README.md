@@ -1,4 +1,4 @@
-#pgmigrate  
+# pgmigrate  
   
 CLI-утилита для миграции **PostgreSQL → PostgreSQL** на уровне данных и схемы.  
   
