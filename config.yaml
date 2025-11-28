@@ -1,0 +1,74 @@
+# config.yaml для pgmigrate (демо-БД airlines, схема bookings)
+
+source:
+  # conninfo строки в стиле psql
+  # ОБЯЗАТЕЛЬНО поправь user/password/port под свой стенд
+  conninfo: "host=localhost port=5432 dbname=demo user=user1 password=pass1"
+
+target:
+  conninfo: "host=localhost port=5433 dbname=db4 user=user2 password=pass2"
+
+schemas:
+  # Мигрируем только схему bookings, где живёт демо-БД
+  mode: include
+
+  include:
+    - bookings
+
+  exclude: []   # при необходимости сюда можно добавить служебные схемы
+
+roles:
+  # Переносим все роли с исходного инстанса (pg_dumpall --roles-only)
+  mode: all
+
+tables:
+  # Берём все таблицы из разрешённых схем
+  # (include — для кастомных настроек по отдельным таблицам)
+  mode: all
+
+  default:
+    chunk_column: ""
+    chunk_size: 200000
+    where: ""
+    order_by: ""
+    limit: 0          # 0 = без лимита, переносим все строки
+
+  include:
+    - schema: "bookings"
+      name: "flights"
+      chunk_column: "flight_id"
+      chunk_size: 100000
+      where: ""
+      order_by: "flight_id"
+      limit: 0        # переносим всю таблицу
+
+    - schema: "bookings"
+      name: "ticket_flights"
+      chunk_column: "flight_id"
+      chunk_size: 300000
+      where: ""
+      order_by: "flight_id"
+      limit: 0        # <--- если нужна вся таблица, ставим 0
+
+    - schema: "bookings"
+      name: "boarding_passes"
+      chunk_column: "flight_id"
+      chunk_size: 300000
+      where: ""
+      order_by: "flight_id"
+      limit: 0        # без лимита, но с чанками
+
+  # Ничего специально не исключаем:
+  # aircrafts_data, airports_data, seats, bookings, tickets
+  # попадут в план как отдельные DATA-задачи без чанков.
+  exclude: []
+
+parallel:
+  # Максимальное число параллельных задач.
+  # Фактически будет min(max_jobs, 80% от числа ядер).
+  max_jobs: 12
+
+options:
+  create_indexes_after_data: true
+  create_constraints_after_data: false
+  analyze_after_load: true
